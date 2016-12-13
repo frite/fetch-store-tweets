@@ -3,7 +3,9 @@
 This script will fetch the Tweets of a given user and store them in the database. It will store only the Tweets, **that is the text, no metadata**.
 
 Regarding the config file. Do not wrap your tokens around quotes etc. They are not needed.
-`pip install -r requirements.txt`
+`pip install -r requirements.txt` for the requirements.
+Run it like this
+`python tweets.py -f real.cfg -u TheUser -db NameOfYourDB -i y`
 And finally, some [music](https://www.youtube.com/watch?v=VSnCKhRGu3w).
 
 ## Why?
