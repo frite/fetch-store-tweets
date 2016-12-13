@@ -1,3 +1,5 @@
 *.pyc
 venv/
 real.cfg
+tweets.db
+*.py.swp

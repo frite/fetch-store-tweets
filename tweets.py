@@ -1,6 +1,7 @@
 import tweepy
 import ConfigParser
 import argparse
+import sqlite3
 
 def get_config(cfg_file):
     config = ConfigParser.ConfigParser()
@@ -16,8 +17,13 @@ def get_config(cfg_file):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--config_file", help="Config File")
-    parser.add_argument("-u", "--user", help="@user")
+    parser.add_argument("-f", "--config-file", help="Config File",
+            required=True)
+    parser.add_argument("-u", "--user", help="@user", required=True)
+    parser.add_argument("-db", "--database-file", help="Where is the DB file",
+            required=True)
+    parser.add_argument("-i", "--init-db", choices=("y", "n"), default="y",
+            help="Create Database file. Default is y")
     return parser.parse_args()
 
 def get_tweets(username, options):
@@ -36,7 +42,7 @@ def get_tweets(username, options):
     while len(cursoring_tweets) > 0:
         print "Latest ID is %s, and I'm fetching more" %(last_id)
         cursoring_tweets = api.user_timeline(
-                screen_name=username, 
+                screen_name=username,
                 count=250,
                 max_id=last_id
                 )
@@ -44,9 +50,42 @@ def get_tweets(username, options):
 
         last_id = tweets[-1].id - 1
 
+    return tweets
+
+def query(query, db_name):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute(query)
+    conn.commit()
+    conn.close()
+
+def create_db(db_name):
+    try:
+        print "Creating database %s" %(db_name)
+        create_table = ''' CREATE TABLE tweets (id BIGINT, status TEXT)'''
+        query(create_table, db_name)
+    except sqlite3.OperationalError:
+        print "Bro, seriously! Maybe check your cmd arguments?!"
+
+def insert_tweets(tweets, db_name):
+    print "Storing tweets"
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    for tweet in tweets:
+        c.execute("INSERT INTO tweets (id, status) VALUES (?, ?)",
+                (tweet.id, tweet.text))
+        conn.commit()
+    print "Done storing."
+    conn.close()
+
+
 if __name__ == "__main__":
     args = get_args()
+
+    if args.init_db == 'y':
+        create_db(args.database_file)
     config_opts = get_config(args.config_file)
-    print args.user
-    get_tweets(args.user, config_opts)
+    tweets = get_tweets(args.user, config_opts)
+    insert_tweets(tweets, args.database_file)
+
 
